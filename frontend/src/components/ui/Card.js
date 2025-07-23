@@ -1,59 +1,79 @@
 import * as React from "react"
-import { cn } from "../../lib/utils"
+import { Paper, Box, Typography } from '@mui/material'
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div
+const Card = React.forwardRef(({ className, children, onClick, sx, ...props }, ref) => (
+  <Paper
     ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
+    elevation={1}
+    onClick={onClick}
+    sx={{
+      borderRadius: 2,
+      overflow: 'hidden',
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'all 0.2s ease-in-out',
+      '&:hover': onClick ? {
+        boxShadow: 3,
+      } : {},
+      ...sx
+    }}
     {...props}
-  />
+  >
+    {children}
+  </Paper>
 ))
 Card.displayName = "Card"
 
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <div
+const CardHeader = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Box
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    sx={{ p: 3, pb: 1.5 }}
     {...props}
-  />
+  >
+    {children}
+  </Box>
 ))
 CardHeader.displayName = "CardHeader"
 
-const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h3
+const CardTitle = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Typography
     ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    )}
+    variant="h6"
+    component="h3"
+    sx={{ fontWeight: 600, mb: 0.5 }}
     {...props}
-  />
+  >
+    {children}
+  </Typography>
 ))
 CardTitle.displayName = "CardTitle"
 
-const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p
+const CardDescription = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Typography
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    variant="body2"
+    color="text.secondary"
     {...props}
-  />
+  >
+    {children}
+  </Typography>
 ))
 CardDescription.displayName = "CardDescription"
 
-const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+const CardContent = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Box ref={ref} sx={{ p: 3, pt: 0 }} {...props}>
+    {children}
+  </Box>
 ))
 CardContent.displayName = "CardContent"
 
-const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
-  <div
+const CardFooter = React.forwardRef(({ className, children, ...props }, ref) => (
+  <Box
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    sx={{ display: 'flex', alignItems: 'center', p: 3, pt: 0 }}
     {...props}
-  />
+  >
+    {children}
+  </Box>
 ))
 CardFooter.displayName = "CardFooter"
 
