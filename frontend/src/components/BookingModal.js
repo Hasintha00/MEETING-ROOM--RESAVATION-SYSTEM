@@ -1,127 +1,139 @@
 
-import React, { useState, useEffect, useContext } from 'react';
-import { Modal, Box, Typography, TextField, Button, MenuItem } from '@mui/material';
+import React, { useState, useContext } from 'react';
+import { 
+  Modal, 
+  Box, 
+  Typography, 
+  Button, 
+  Alert,
+  CircularProgress
+} from '@mui/material';
 import axios from 'axios';
 import AuthContext from '../context/AuthContext';
+import EnhancedBookingForm from './EnhancedBookingForm';
 
 const style = {
   position: 'absolute',
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
+  width: 700,
   bgcolor: 'background.paper',
-  border: '2px solid #000',
+  borderRadius: 2,
   boxShadow: 24,
-  p: 4,
+  p: 0,
+  maxHeight: '90vh',
+  overflow: 'auto',
 };
 
-const BookingModal = ({ open, handleClose, booking }) => {
-  const [title, setTitle] = useState('');
-  const [room, setRoom] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [rooms, setRooms] = useState([]);
+const BookingModal = ({ open, handleClose, booking, onBookingUpdate }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const { user } = useContext(AuthContext);
 
-  useEffect(() => {
-    if (booking) {
-      setTitle(booking.title || '');
-      setRoom(booking.room?._id || '');
-      setStartTime(booking.start ? new Date(booking.start).toISOString().slice(0, 16) : '');
-      setEndTime(booking.end ? new Date(booking.end).toISOString().slice(0, 16) : '');
-    }
-    fetchRooms();
-  }, [booking]);
+  const handleBookingSubmit = async (bookingData) => {
+    setError('');
+    setSuccess('');
+    setLoading(true);
 
-  const fetchRooms = async () => {
-    const res = await axios.get('http://localhost:5000/api/rooms');
-    setRooms(res.data);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const bookingData = { title, room, startTime, endTime };
     try {
-      if (booking._id) {
-        await axios.put(`http://localhost:5000/api/bookings/${booking._id}`, bookingData);
+      const token = localStorage.getItem('token');
+      let response;
+      
+      if (booking && booking._id) {
+        response = await axios.put(
+          `http://localhost:5000/api/bookings/${booking._id}`, 
+          bookingData,
+          { headers: { 'x-auth-token': token } }
+        );
+        setSuccess('Booking updated successfully!');
       } else {
-        await axios.post('http://localhost:5000/api/bookings', bookingData);
+        response = await axios.post(
+          'http://localhost:5000/api/bookings', 
+          bookingData,
+          { headers: { 'x-auth-token': token } }
+        );
+        setSuccess('Booking created successfully!');
       }
-      handleClose();
+      
+      // Call the callback to refresh the parent component
+      if (onBookingUpdate) {
+        onBookingUpdate();
+      }
+      
+      setTimeout(() => {
+        handleClose();
+      }, 1500);
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.msg || 'An error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this booking?')) return;
+    
+    setLoading(true);
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${booking._id}`);
-      handleClose();
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/bookings/${booking._id}`, {
+        headers: { 'x-auth-token': token }
+      });
+      setSuccess('Booking deleted successfully!');
+      
+      if (onBookingUpdate) {
+        onBookingUpdate();
+      }
+      
+      setTimeout(() => {
+        handleClose();
+      }, 1500);
     } catch (err) {
-      console.error(err);
+      setError(err.response?.data?.msg || 'Failed to delete booking');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Modal open={open} onClose={handleClose}>
       <Box sx={style}>
-        <Typography variant="h6" component="h2">
-          {booking?._id ? 'Edit Booking' : 'New Booking'}
-        </Typography>
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Title"
-            fullWidth
-            margin="normal"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+        {/* Header */}
+        <Box sx={{ p: 3, borderBottom: '1px solid #e0e0e0' }}>
+          <Typography variant="h5" component="h2">
+            {booking?._id ? 'Edit Booking' : 'New Booking'}
+          </Typography>
+        </Box>
+
+        {/* Content */}
+        <Box sx={{ p: 3 }}>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+
+          <EnhancedBookingForm
+            initialData={booking}
+            onSubmit={handleBookingSubmit}
+            loading={loading}
           />
-          <TextField
-            select
-            label="Room"
-            value={room}
-            onChange={(e) => setRoom(e.target.value)}
-            fullWidth
-            margin="normal"
-          >
-            {rooms.map((r) => (
-              <MenuItem key={r._id} value={r._id}>
-                {r.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            label="Start Time"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            label="End Time"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <Button type="submit" variant="contained" color="primary">
-            {booking?._id ? 'Update' : 'Create'}
-          </Button>
-          {booking?._id && user.role === 'Admin' && (
-            <Button onClick={handleDelete} variant="contained" color="secondary">
-              Delete
-            </Button>
+
+          {/* Delete Button for existing bookings */}
+          {booking?._id && (user.role === 'Admin' || booking.user._id === user.id) && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #e0e0e0' }}>
+              <Button 
+                onClick={handleDelete} 
+                variant="outlined" 
+                color="error"
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={16} /> : null}
+                fullWidth
+              >
+                Delete Booking
+              </Button>
+            </Box>
           )}
-        </form>
+        </Box>
       </Box>
     </Modal>
   );
