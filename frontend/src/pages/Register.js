@@ -1,20 +1,18 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { TextField, Button, Container, Typography, MenuItem } from '@mui/material';
+import { TextField, Button, Container, Typography } from '@mui/material';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Staff');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/auth/register', { name, email, password, role });
+      await axios.post('/api/auth/register', { name, email, password });
       navigate('/login');
     } catch (err) {
       console.error(err);
@@ -51,17 +49,6 @@ const Register = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <TextField
-          select
-          label="Role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          fullWidth
-          margin="normal"
-        >
-          <MenuItem value="Staff">Staff</MenuItem>
-          <MenuItem value="Admin">Admin</MenuItem>
-        </TextField>
         <Button type="submit" variant="contained" color="primary" fullWidth>
           Register
         </Button>
